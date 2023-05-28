@@ -1,4 +1,4 @@
-# My library of smart contracts
+# Library of smart contracts
 
 Includes contract templates and experiments for:
 
