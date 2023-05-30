@@ -6,7 +6,7 @@ import { ERC721AQueryable } from "erc721a/contracts/extensions/ERC721AQueryable.
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { IERC2981, ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { OperatorFilterer } from "closedsea";
+import { OperatorFilterer } from "closedsea/src/OperatorFilterer.sol";
 
 contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -28,13 +28,14 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+	event UpdatedAllowlistMintPrice(uint256 allowlistMintPrice);
 	event UpdatedBaseUri(string baseUri);
 	event UpdatedIsPublicMintActive(bool isPublicMintActive);
 	event UpdatedIsAllowlistMintActive(bool isAllowlistMintActive);
 	event UpdatedMaxSupply(uint256 maxSupply);
 	event UpdatedMaxPublicMints(uint256 maxPublicMints);
 	event UpdatedMaxAllowlistMints(uint256 maxAllowlistMints);
-	event UpdatedMerkleRoot(string merkleRoot);
+	event UpdatedMerkleRoot(bytes32 merkleRoot);
 	event UpdatedPublicMintPrice(uint256 publicMintPrice);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -45,8 +46,9 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     uint256 public maxAllowlistMints = 2;
     uint256 public publicMintPrice = 0.07 ether;
     uint256 public allowlistMintPrice = 0.05 ether;
-    bool public isPublicMintActive = false;
-    bool public isAllowlistMintActive = false;
+    bool public isPublicMintActive;
+    bool public isAllowlistMintActive;
+    bool public operatorFilteringEnabled;
     string public baseTokenURI;
     bytes32 public merkleRoot;
 
@@ -57,7 +59,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @notice Requires that the minter is not a contract, and mint amount does not exceed maximum supply
     modifier validTxn(uint256 nMints) {
         if (msg.sender != tx.origin) revert CallerIsContract();
-        if (totalSupply() + nMints > MAX_SUPPLY) revert ExceedsTotalSupply();
+        if (totalSupply() + nMints > maxSupply) revert ExceedsTotalSupply();
         _;
     }
 
@@ -78,7 +80,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @notice Public mint when public sale is active
     function mintPublic(uint256 nMints) external payable validTxn(nMints) {
         if (!isPublicMintActive) revert PublicMintInactive();
-        if (nMints > MAX_PUBLIC_MINTS) revert ExceedsTxnLimit();
+        if (nMints > maxPublicMints) revert ExceedsTxnLimit();
         if (msg.value != publicMintPrice * nMints) revert InsufficientAmountSent();
 
         _mint(msg.sender, nMints);
@@ -90,8 +92,8 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
         bytes32 node = keccak256(abi.encodePacked(msg.sender));
         if (!isAllowlistMintActive) revert AllowlistMintInactive();
         if (!MerkleProof.verify(_proof, merkleRoot, node)) revert NotOnAllowlist();
-        if (msg.value != ALLOWLIST_MINT_PRICE * nMints) revert InsufficientAmountSent();
-        if (_numberMinted(msg.sender) + nMints > MAX_ALLOWLIST_MINTS) revert ExceedsAllowlistLimit();
+        if (msg.value != allowlistMintPrice * nMints) revert InsufficientAmountSent();
+        if (_numberMinted(msg.sender) + nMints > maxAllowlistMints) revert ExceedsAllowlistLimit();
 
         _mint(msg.sender, nMints);
     }
@@ -150,7 +152,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @notice Allows the owner to set the base URI
     function setBaseURI(string calldata _baseTokenURI) external onlyOwner {
         baseTokenURI = _baseTokenURI;
-		emit UpdatedBaseUri(string baseTokenURI);
+		emit UpdatedBaseUri(_baseTokenURI);
     }
 
     /// @notice Allows the owner to flip the public mint state
@@ -166,28 +168,23 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    AUXILIARY FUNCTIONS                     */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @notice Allows the owner to withdraw and split contract funds
-    function withdrawAll() external onlyOwner {
-        uint256 contractBalance = address(this).balance;
-
-        if (contractBalance == 0) revert NoFundsToWithdraw();
-
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), address(this).balance);
-    }
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                             HELPERS                        */
+    /*                    HELPER/AUXILIARY FUNCTIONS              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Allows contract to transfer and amount of funds to an address
     function _withdraw(address _address, uint256 _amount) private {
         (bool success, ) = payable(_address).call{ value: _amount }("");
         if (!success) revert TransferFailed();
+    }
+
+    /// @notice Allows the owner to withdraw and split contract funds
+    function withdrawAll() external onlyOwner {
+        uint256 contractBalance = address(this).balance;
+        if (contractBalance == 0) revert NoFundsToWithdraw();
+
+        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
+        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
+        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), address(this).balance);
     }
 
     /// @notice Override view function to get the base URI

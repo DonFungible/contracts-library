@@ -21,10 +21,9 @@ module.exports = {
             blockGasLimit: 90001280408,
             gas: 90001280408,
         },
-        rinkeby: {
-            url: process.env.INFURA_RINKEBY_URL,
+        sepolia: {
+            url: process.env.INFURA_SEPOLIA_URL,
             accounts: [process.env.PRIVATE_KEY],
-            gas: 3e7,
         },
         goerli: {
             url: process.env.INFURA_GOERLI_URL,
