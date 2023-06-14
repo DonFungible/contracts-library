@@ -414,4 +414,13 @@ describe('ExampleERC721A tests', function () {
             expect(await contract.supportsInterface('0x01ffc9a7')).to.equal(true);
         });
     });
+
+    describe('transferFrom', function () {
+        it('should revert when not called by owner', async function () {
+            await contract.connect(owner).mintReserve(10);
+            await expect(
+                contract.connect(addr1).transferFrom(owner.address, addr1.address, 1)
+            ).to.be.revertedWithCustomError(contract, 'TransferCallerNotOwnerNorApproved');
+        });
+    });
 });
