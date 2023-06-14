@@ -15,7 +15,6 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
 
     error CallerIsContract();
     error ExceedsTxnLimit();
-    error ExceedsAllowlistLimit();
     error ExceedsTotalSupply();
     error IncorrectPayment();
     error NoFundsToWithdraw();
@@ -26,6 +25,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           STORAGE                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    address public immutable TREASURY;
     uint256 public maxSupply = 10000;
     uint256 public maxPublicMintsPerTxn = 5;
     uint256 public maxAllowlistMintsPerTxn = 2;
@@ -52,7 +52,8 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                         CONSTRUCTOR                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor() ERC721A('ExampleERC721A', 'Example') {
+    constructor(address _treasury) ERC721A('ExampleERC721A', 'Example') {
+        TREASURY = _treasury;
         _registerForOperatorFiltering();
         operatorFilteringEnabled = true;
         _setDefaultRoyalty(msg.sender, 500);
@@ -78,7 +79,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
         if (!isAllowlistMintOpen) revert MintNotOpen();
         if (!MerkleProof.verify(_proof, merkleRoot, node)) revert NotOnAllowlist();
         if (msg.value != allowlistMintPrice * nMints) revert IncorrectPayment();
-        if (_numberMinted(msg.sender) + nMints > maxAllowlistMintsPerTxn) revert ExceedsAllowlistLimit();
+        if (_numberMinted(msg.sender) + nMints > maxAllowlistMintsPerTxn) revert ExceedsTxnLimit();
 
         _mint(msg.sender, nMints);
     }
@@ -147,7 +148,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     }
 
     /// @notice Allows the owner to flip the allowlist sale state
-    function toggleAllowlistMintOpen() external onlyOwner {
+    function toggleIsAllowlistMintOpen() external onlyOwner {
         isAllowlistMintOpen = !isAllowlistMintOpen;
     }
 
