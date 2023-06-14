@@ -171,6 +171,9 @@ describe('ExampleERC721A tests', function () {
                 contract.connect(addr1).mintAllowlist(1, merkleProof, { value: '0' })
             ).to.be.revertedWithCustomError(contract, 'IncorrectPayment');
             await expect(
+                contract.connect(addr1).mintAllowlist(1, merkleProof, { value: expected.allowlistMintPrice.div(2) })
+            ).to.be.revertedWithCustomError(contract, 'IncorrectPayment');
+            await expect(
                 contract.connect(addr1).mintAllowlist(1, merkleProof, { value: expected.allowlistMintPrice.mul(10) })
             ).to.be.revertedWithCustomError(contract, 'IncorrectPayment');
         });
@@ -199,6 +202,14 @@ describe('ExampleERC721A tests', function () {
             await expect(
                 contract.connect(owner).mintAllowlist(2, merkleProof, { value: expected.allowlistMintPrice.mul(2) })
             ).to.be.revertedWithCustomError(contract, 'ExceedsMaxSupply');
+        });
+        it('should revert if minter is not in allowlist', async function () {
+            const merkleProof = computeMerkleProof(allowlist, addr2.address);
+            await contract.connect(owner).toggleIsAllowlistMintOpen();
+
+            await expect(
+                contract.connect(addr2).mintAllowlist(1, merkleProof, { value: expected.allowlistMintPrice })
+            ).to.be.revertedWithCustomError(contract, 'NotOnAllowlist');
         });
     });
     describe('mintReserve', function () {
