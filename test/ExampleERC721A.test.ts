@@ -19,7 +19,7 @@ async function initializeTests() {
 
     await contract.connect(owner).setMerkleRoot(merkleRoot);
 
-    return { contract, owner, addr1, addr2, allowlist, merkleRoot };
+    return { contract, owner, addr1, addr2, allowlist, merkleRoot, treasuryWallet };
 }
 
 describe('ExampleERC721A tests', function () {
@@ -32,6 +32,7 @@ describe('ExampleERC721A tests', function () {
     let addr2: any;
     let allowlist: string[];
     let merkleRoot: string;
+    let treasuryWallet: string;
 
     const expected = {
         tokenName: 'ExampleERC721A',
@@ -124,6 +125,16 @@ describe('ExampleERC721A tests', function () {
                 contract.connect(addr1).mintPublic(50, { value: expected.publicMintPrice.mul(50) })
             ).to.be.revertedWithCustomError(contract, 'ExceedsTxnLimit');
         });
+        it('should revert if minting over max supply', async function () {
+            await contract.connect(owner).toggleIsPublicMintOpen();
+            await contract.connect(owner).mintReserve(expected.maxSupply);
+            await expect(
+                contract.connect(addr1).mintPublic(1, { value: expected.publicMintPrice })
+            ).to.be.revertedWithCustomError(contract, 'ExceedsMaxSupply');
+            await expect(
+                contract.connect(owner).mintPublic(2, { value: expected.publicMintPrice.mul(2) })
+            ).to.be.revertedWithCustomError(contract, 'ExceedsMaxSupply');
+        });
     });
     describe('mintAllowlist', function () {
         it('should update minters balance after minting successfully', async function () {
@@ -175,6 +186,35 @@ describe('ExampleERC721A tests', function () {
             await expect(
                 contract.connect(addr1).mintAllowlist(50, merkleProof, { value: expected.allowlistMintPrice.mul(50) })
             ).to.be.revertedWithCustomError(contract, 'ExceedsTxnLimit');
+        });
+        it('should revert if minting over max supply', async function () {
+            const merkleProof = computeMerkleProof(allowlist, addr1.address);
+            const merkleProofOwner = computeMerkleProof(allowlist, owner.address);
+            await contract.connect(owner).toggleIsAllowlistMintOpen();
+
+            await contract.connect(owner).mintReserve(expected.maxSupply);
+            await expect(
+                contract.connect(addr1).mintAllowlist(1, merkleProof, { value: expected.allowlistMintPrice })
+            ).to.be.revertedWithCustomError(contract, 'ExceedsMaxSupply');
+            await expect(
+                contract.connect(owner).mintAllowlist(2, merkleProof, { value: expected.allowlistMintPrice.mul(2) })
+            ).to.be.revertedWithCustomError(contract, 'ExceedsMaxSupply');
+        });
+    });
+    describe('mintReserve', function () {
+        it('should update minters balance after minting successfully', async function () {
+            expect(await contract.balanceOf(owner.address)).to.equal(0);
+            await contract.connect(owner).mintReserve(1);
+            expect(await contract.balanceOf(owner.address)).to.equal(1);
+            await contract.connect(owner).mintReserve(100);
+            expect(await contract.balanceOf(owner.address)).to.equal(101);
+        });
+        it('should revert if minting over max supply', async function () {
+            await contract.connect(owner).mintReserve(expected.maxSupply);
+            await expect(contract.connect(owner).mintReserve(1)).to.be.revertedWithCustomError(
+                contract,
+                'ExceedsMaxSupply'
+            );
         });
     });
     context('Setter functions', function () {
@@ -291,7 +331,6 @@ describe('ExampleERC721A tests', function () {
             it('should update royalty receiver', async function () {
                 const tokenId = 1;
                 const salePrice = ethers.utils.parseEther('1');
-                const expectedOldRoyaltyAmount = salePrice.mul(expected.defaultRoyaltyBips).div(10000);
                 const [initialRoyaltyReceiver] = await contract.royaltyInfo(tokenId, salePrice);
                 expect(initialRoyaltyReceiver).to.equal(owner.address);
 
@@ -342,6 +381,37 @@ describe('ExampleERC721A tests', function () {
                     'Ownable: caller is not the owner'
                 );
             });
+        });
+    });
+
+    describe('Withdraw funds', function () {
+        it('should withdraw funds to treasury wallet', async function () {
+            // Recipient in this case is the contract owner.
+            const initialTreasuryBalance = await owner.getBalance();
+            await contract.connect(owner).toggleIsPublicMintOpen();
+            await contract.connect(addr1).mintPublic(1, { value: expected.publicMintPrice });
+            await contract.connect(owner).withdrawAll();
+            const finalTreasuryBalance = await owner.getBalance();
+
+            expect(finalTreasuryBalance).to.be.gt(initialTreasuryBalance);
+        });
+        it('should revert if contract has empty balance', async function () {
+            await expect(contract.connect(owner).withdrawAll()).to.be.revertedWithCustomError(
+                contract,
+                'NoFundsToWithdraw'
+            );
+        });
+        it('should revert when not called by owner', async function () {
+            await expect(contract.connect(addr1).withdrawAll()).to.be.revertedWith('Ownable: caller is not the owner');
+        });
+    });
+    describe('supportsInterface', function () {
+        it('should return true for ERC721 interface', async function () {
+            expect(await contract.supportsInterface('0x80ac58cd')).to.equal(true);
+        });
+
+        it('should return true for ERC165 interface', async function () {
+            expect(await contract.supportsInterface('0x01ffc9a7')).to.equal(true);
         });
     });
 });

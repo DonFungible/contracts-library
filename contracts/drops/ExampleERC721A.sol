@@ -15,7 +15,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
 
     error CallerIsContract();
     error ExceedsTxnLimit();
-    error ExceedsTotalSupply();
+    error ExceedsMaxSupply();
     error IncorrectPayment();
     error NoFundsToWithdraw();
     error NotOnAllowlist();
@@ -44,7 +44,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @notice Requires that the minter is not a contract, and mint amount does not exceed maximum supply
     modifier validTxn(uint256 nMints) {
         if (msg.sender != tx.origin) revert CallerIsContract();
-        if (totalSupply() + nMints > maxSupply) revert ExceedsTotalSupply();
+        if (totalSupply() + nMints > maxSupply) revert ExceedsMaxSupply();
         _;
     }
 
@@ -166,9 +166,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     function withdrawAll() external onlyOwner {
         uint256 contractBalance = address(this).balance;
         if (contractBalance == 0) revert NoFundsToWithdraw();
-
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), address(this).balance);
+        _withdraw(TREASURY, address(this).balance);
     }
 
     /// @notice Override view function to get the base URI from storage
