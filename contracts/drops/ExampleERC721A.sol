@@ -1,42 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import { IERC721A, ERC721A } from "erc721a/contracts/ERC721A.sol";
-import { ERC721AQueryable } from "erc721a/contracts/extensions/ERC721AQueryable.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import { IERC2981, ERC2981 } from "@openzeppelin/contracts/token/common/ERC2981.sol";
-import { OperatorFilterer } from "closedsea/src/OperatorFilterer.sol";
+import { IERC721A, ERC721A } from 'erc721a/contracts/ERC721A.sol';
+import { ERC721AQueryable } from 'erc721a/contracts/extensions/ERC721AQueryable.sol';
+import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
+import { MerkleProof } from '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
+import { IERC2981, ERC2981 } from '@openzeppelin/contracts/token/common/ERC2981.sol';
+import { OperatorFilterer } from 'closedsea/src/OperatorFilterer.sol';
 
 contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-	error AllowlistMintInactive();
-	error CallerIsContract();
-	error ExceedsTxnLimit();
-	error ExceedsAllowlistLimit();
-	error ExceedsTotalSupply();
-	error InsufficientAmountSent();	
-	error NoFundsToWithdraw();
-	error NotOnAllowlist();
-	error PublicMintInactive();
-	error TransferFailed();
-
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                           EVENTS                           */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-	event UpdatedAllowlistMintPrice(uint256 allowlistMintPrice);
-	event UpdatedBaseUri(string baseUri);
-	event UpdatedIsPublicMintActive(bool isPublicMintActive);
-	event UpdatedIsAllowlistMintActive(bool isAllowlistMintActive);
-	event UpdatedMaxSupply(uint256 maxSupply);
-	event UpdatedMaxPublicMints(uint256 maxPublicMints);
-	event UpdatedMaxAllowlistMints(uint256 maxAllowlistMints);
-	event UpdatedMerkleRoot(bytes32 merkleRoot);
-	event UpdatedPublicMintPrice(uint256 publicMintPrice);
+    error AllowlistMintInactive();
+    error CallerIsContract();
+    error ExceedsTxnLimit();
+    error ExceedsAllowlistLimit();
+    error ExceedsTotalSupply();
+    error InsufficientAmountSent();
+    error NoFundsToWithdraw();
+    error NotOnAllowlist();
+    error PublicMintInactive();
+    error TransferFailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           STORAGE                          */
@@ -67,11 +53,11 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                         CONSTRUCTOR                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor() ERC721A("Example", "Example") {
-		_registerForOperatorFiltering();
+    constructor() ERC721A('Example', 'Example') {
+        _registerForOperatorFiltering();
         operatorFilteringEnabled = true;
         _setDefaultRoyalty(msg.sender, 500);
-	}
+    }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        MINT FUNCTIONS                      */
@@ -101,7 +87,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @notice Reserved mints for owner
     /// @dev MAX_BATCH_SIZE enforces a fixed batch size when minting large quantities with ERC721A
     function mintReserve(uint256 nMints) external onlyOwner validTxn(nMints) {
-		uint256 MAX_BATCH_SIZE = 5;
+        uint256 MAX_BATCH_SIZE = 5;
         uint256 remainder = nMints % MAX_BATCH_SIZE;
         unchecked {
             uint256 nBatches = nMints / MAX_BATCH_SIZE;
@@ -118,62 +104,61 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                    	 SETTER FUNCTIONS                     */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-	function setMaxSupply(uint256 _maxSupply) external onlyOwner {
-		maxSupply = _maxSupply;
-		emit UpdatedMaxSupply(_maxSupply);
-	}
+    function setMaxSupply(uint256 _maxSupply) external onlyOwner {
+        maxSupply = _maxSupply;
+    }
 
-	function setMaxPublicMints(uint256 _maxPublicMints) external onlyOwner {
-		maxPublicMints = _maxPublicMints;
-		emit UpdatedMaxSupply(_maxPublicMints);
-	}
+    function setMaxPublicMints(uint256 _maxPublicMints) external onlyOwner {
+        maxPublicMints = _maxPublicMints;
+    }
 
-	function setMaxAllowlistMints(uint256 _maxAllowlistMints) external onlyOwner {
-		maxAllowlistMints = _maxAllowlistMints;
-		emit UpdatedMaxAllowlistMints(_maxAllowlistMints);
-	}
+    function setMaxAllowlistMints(uint256 _maxAllowlistMints) external onlyOwner {
+        maxAllowlistMints = _maxAllowlistMints;
+    }
 
-	function setPublicMintPrice(uint256 _publicMintPrice) external onlyOwner {
-		publicMintPrice = _publicMintPrice;
-		emit UpdatedPublicMintPrice(_publicMintPrice);
-	}
+    function setPublicMintPrice(uint256 _publicMintPrice) external onlyOwner {
+        publicMintPrice = _publicMintPrice;
+    }
 
-	function setAllowlistMintPrice(uint256 _allowlistMintPrice) external onlyOwner {
-		allowlistMintPrice = _allowlistMintPrice;
-		emit UpdatedAllowlistMintPrice(_allowlistMintPrice);
-	}
+    function setAllowlistMintPrice(uint256 _allowlistMintPrice) external onlyOwner {
+        allowlistMintPrice = _allowlistMintPrice;
+    }
 
     /// @notice Allows the owner to update the allowlist Merkle root hash
     function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
         merkleRoot = _merkleRoot;
-		emit UpdatedMerkleRoot(_merkleRoot);
     }
 
     /// @notice Allows the owner to set the base URI
     function setBaseURI(string calldata _baseTokenURI) external onlyOwner {
         baseTokenURI = _baseTokenURI;
-		emit UpdatedBaseUri(_baseTokenURI);
+    }
+
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) public onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
+    }
+
+    function setOperatorFilteringEnabled(bool value) public onlyOwner {
+        operatorFilteringEnabled = value;
     }
 
     /// @notice Allows the owner to flip the public mint state
     function toggleIsPublicMintActive() external onlyOwner {
         isPublicMintActive = !isPublicMintActive;
-		emit UpdatedIsPublicMintActive(isPublicMintActive);
     }
 
     /// @notice Allows the owner to flip the allowlist sale state
     function toggleAllowlistMintActive() external onlyOwner {
         isAllowlistMintActive = !isAllowlistMintActive;
-		emit UpdatedIsAllowlistMintActive(isAllowlistMintActive);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    HELPER/AUXILIARY FUNCTIONS              */
+    /*                      HELPERS AND OVERRIDES                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Allows contract to transfer and amount of funds to an address
     function _withdraw(address _address, uint256 _amount) private {
-        (bool success, ) = payable(_address).call{ value: _amount }("");
+        (bool success, ) = payable(_address).call{ value: _amount }('');
         if (!success) revert TransferFailed();
     }
 
@@ -183,11 +168,10 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
         if (contractBalance == 0) revert NoFundsToWithdraw();
 
         _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
-        _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), (contractBalance * 15) / 100);
         _withdraw(address(0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045), address(this).balance);
     }
 
-    /// @notice Override view function to get the base URI
+    /// @notice Override view function to get the base URI from storage
     function _baseURI() internal view override returns (string memory) {
         return baseTokenURI;
     }
@@ -195,49 +179,24 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /// @dev Allows contract to receive ETH
     receive() external payable {}
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    	 OPERATOR FILTER                      */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-	function transferFrom(address from, address to, uint256 tokenId)
-        public
-        payable
-        override(IERC721A, ERC721A)
-        onlyAllowedOperator(from)
-    {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public payable override(IERC721A, ERC721A) onlyAllowedOperator(from) {
         super.transferFrom(from, to, tokenId);
-    }
-
-    function setOperatorFilteringEnabled(bool value) public onlyOwner {
-        operatorFilteringEnabled = value;
     }
 
     function _operatorFilteringEnabled() internal view override returns (bool) {
         return operatorFilteringEnabled;
     }
-	
-    /// @dev For deriving contracts to override, so that preferred marketplaces can
-    /// skip operator filtering, helping users save gas.
-    /// Returns false for all inputs by default.
+
     function _isPriorityOperator(address operator) internal pure override returns (bool) {
+        // Seaport Conduit
         return operator == address(0x1E0049783F008A0085193E00003D00cd54003c71);
     }
-	
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    	     ROYALTIES                        */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(IERC721A, ERC721A, ERC2981)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId) public view override(IERC721A, ERC721A, ERC2981) returns (bool) {
         return ERC721A.supportsInterface(interfaceId) || ERC2981.supportsInterface(interfaceId);
     }
-
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator) public onlyOwner {
-        _setDefaultRoyalty(receiver, feeNumerator);
-    }
-
 }
