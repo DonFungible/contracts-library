@@ -189,8 +189,8 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
         return operatorFilteringEnabled;
     }
 
+    /// @dev Helper function to save gas when trading via Seaport Conduit
     function _isPriorityOperator(address operator) internal pure override returns (bool) {
-        // Seaport Conduit
         return operator == address(0x1E0049783F008A0085193E00003D00cd54003c71);
     }
 

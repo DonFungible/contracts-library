@@ -227,6 +227,9 @@ describe('ExampleERC721A tests', function () {
                 'ExceedsMaxSupply'
             );
         });
+        it('should revert when not called by owner', async function () {
+            await expect(contract.connect(addr1).mintReserve(1)).to.be.revertedWith('Ownable: caller is not the owner');
+        });
     });
     context('Setter functions', function () {
         describe('setMaxSupply', function () {
