@@ -23,26 +23,27 @@ module.exports = {
             gas: 90001280408,
         },
         sepolia: {
-            url: process.env.INFURA_SEPOLIA_URL,
+            url: 'https://eth-sepolia.g.alchemy.com/v2/' + process.env.ALCHEMY_API_KEY || process.env.INFURA_API_KEY,
             accounts: [process.env.PRIVATE_KEY],
         },
         goerli: {
-            url: process.env.INFURA_GOERLI_URL,
+            url: 'https://eth-goerli.g.alchemy.com/v2/' + process.env.ALCHEMY_API_KEY || process.env.INFURA_API_KEY,
             accounts: [process.env.PRIVATE_KEY],
             gas: 3e7,
         },
         mainnet: {
-            url: process.env.ALCHEMY_MAINNET_URL,
+            url: 'https://eth-mainnet.g.alchemy.com/v2/' + process.env.ALCHEMY_API_KEY || process.env.INFURA_API_KEY,
             accounts: [process.env.PRIVATE_KEY],
         },
         polygon: {
-            url: process.env.ALCHEMY_POLYGON_URL,
-            accounts: [process.env.PRIVATE_KEY_POLYGON],
+            url:
+                'https://polygon-mainnet.g.alchemy.com/v2/' + process.env.ALCHEMY_API_KEY || process.env.INFURA_API_KEY,
+            accounts: [process.env.PRIVATE_KEY],
         },
     },
     etherscan: {
         apiKey: process.env.ETHERSCAN_KEY,
-        // mumbai: process.env.POLYGONSCAN_KEY,
+        // apiKey: process.env.POLYGONSCAN_KEY,
     },
     gasReporter: {
         enabled: true,
