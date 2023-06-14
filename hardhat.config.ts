@@ -1,6 +1,7 @@
 require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-etherscan');
 require('@nomiclabs/hardhat-ethers');
+require('@openzeppelin/hardhat-upgrades');
 
 require('hardhat-gas-reporter');
 require('solidity-coverage');
@@ -40,8 +41,8 @@ module.exports = {
         },
     },
     etherscan: {
-        // apiKey: process.env.ETHERSCAN_KEY,
-        apiKey: process.env.POLYGONSCAN_KEY,
+        apiKey: process.env.ETHERSCAN_KEY,
+        // mumbai: process.env.POLYGONSCAN_KEY,
     },
     gasReporter: {
         enabled: true,
