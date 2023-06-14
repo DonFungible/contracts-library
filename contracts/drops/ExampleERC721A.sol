@@ -13,27 +13,26 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                           ERRORS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    error AllowlistMintInactive();
     error CallerIsContract();
     error ExceedsTxnLimit();
     error ExceedsAllowlistLimit();
     error ExceedsTotalSupply();
-    error InsufficientAmountSent();
+    error IncorrectPayment();
     error NoFundsToWithdraw();
     error NotOnAllowlist();
-    error PublicMintInactive();
+    error MintNotOpen();
     error TransferFailed();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           STORAGE                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-    uint256 public maxSupply = 5555;
-    uint256 public maxPublicMints = 5;
-    uint256 public maxAllowlistMints = 2;
-    uint256 public publicMintPrice = 0.07 ether;
-    uint256 public allowlistMintPrice = 0.05 ether;
-    bool public isPublicMintActive;
-    bool public isAllowlistMintActive;
+    uint256 public maxSupply = 10000;
+    uint256 public maxPublicMintsPerTxn = 5;
+    uint256 public maxAllowlistMintsPerTxn = 2;
+    uint256 public publicMintPrice = 1 ether;
+    uint256 public allowlistMintPrice = 0.5 ether;
+    bool public isPublicMintOpen;
+    bool public isAllowlistMintOpen;
     bool public operatorFilteringEnabled;
     string public baseTokenURI;
     bytes32 public merkleRoot;
@@ -53,7 +52,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                         CONSTRUCTOR                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor() ERC721A('Example', 'Example') {
+    constructor() ERC721A('ExampleERC721A', 'Example') {
         _registerForOperatorFiltering();
         operatorFilteringEnabled = true;
         _setDefaultRoyalty(msg.sender, 500);
@@ -63,23 +62,23 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*                        MINT FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Public mint when public sale is active
+    /// @notice Public mint when public sale is open
     function mintPublic(uint256 nMints) external payable validTxn(nMints) {
-        if (!isPublicMintActive) revert PublicMintInactive();
-        if (nMints > maxPublicMints) revert ExceedsTxnLimit();
-        if (msg.value != publicMintPrice * nMints) revert InsufficientAmountSent();
+        if (!isPublicMintOpen) revert MintNotOpen();
+        if (nMints > maxPublicMintsPerTxn) revert ExceedsTxnLimit();
+        if (msg.value != publicMintPrice * nMints) revert IncorrectPayment();
 
         _mint(msg.sender, nMints);
     }
 
-    /// @notice Allowlist mint when allowlist sale is active
+    /// @notice Allowlist mint when allowlist sale is open
     /// @dev Uses a Merkle tree to verify if address is on allowlist
-    function mintAllowlist(bytes32[] calldata _proof, uint256 nMints) external payable validTxn(nMints) {
+    function mintAllowlist(uint256 nMints, bytes32[] calldata _proof) external payable validTxn(nMints) {
         bytes32 node = keccak256(abi.encodePacked(msg.sender));
-        if (!isAllowlistMintActive) revert AllowlistMintInactive();
+        if (!isAllowlistMintOpen) revert MintNotOpen();
         if (!MerkleProof.verify(_proof, merkleRoot, node)) revert NotOnAllowlist();
-        if (msg.value != allowlistMintPrice * nMints) revert InsufficientAmountSent();
-        if (_numberMinted(msg.sender) + nMints > maxAllowlistMints) revert ExceedsAllowlistLimit();
+        if (msg.value != allowlistMintPrice * nMints) revert IncorrectPayment();
+        if (_numberMinted(msg.sender) + nMints > maxAllowlistMintsPerTxn) revert ExceedsAllowlistLimit();
 
         _mint(msg.sender, nMints);
     }
@@ -108,12 +107,12 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
         maxSupply = _maxSupply;
     }
 
-    function setMaxPublicMints(uint256 _maxPublicMints) external onlyOwner {
-        maxPublicMints = _maxPublicMints;
+    function setMaxPublicMints(uint256 _maxPublicMintsPerTxn) external onlyOwner {
+        maxPublicMintsPerTxn = _maxPublicMintsPerTxn;
     }
 
-    function setMaxAllowlistMints(uint256 _maxAllowlistMints) external onlyOwner {
-        maxAllowlistMints = _maxAllowlistMints;
+    function setMaxAllowlistMints(uint256 _maxAllowlistMintsPerTxn) external onlyOwner {
+        maxAllowlistMintsPerTxn = _maxAllowlistMintsPerTxn;
     }
 
     function setPublicMintPrice(uint256 _publicMintPrice) external onlyOwner {
@@ -143,13 +142,13 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     }
 
     /// @notice Allows the owner to flip the public mint state
-    function toggleIsPublicMintActive() external onlyOwner {
-        isPublicMintActive = !isPublicMintActive;
+    function toggleIsPublicMintOpen() external onlyOwner {
+        isPublicMintOpen = !isPublicMintOpen;
     }
 
     /// @notice Allows the owner to flip the allowlist sale state
-    function toggleAllowlistMintActive() external onlyOwner {
-        isAllowlistMintActive = !isAllowlistMintActive;
+    function toggleAllowlistMintOpen() external onlyOwner {
+        isAllowlistMintOpen = !isAllowlistMintOpen;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
