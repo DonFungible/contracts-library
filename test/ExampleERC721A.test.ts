@@ -435,8 +435,8 @@ describe('ExampleERC721A tests', function () {
             expect(await contract.supportsInterface('0x80ac58cd')).to.equal(true);
         });
 
-        it('should return true for ERC165 interface', async function () {
-            expect(await contract.supportsInterface('0x01ffc9a7')).to.equal(true);
+        it('should return true for ERC2981 interface', async function () {
+            expect(await contract.supportsInterface('0x2a55205a')).to.equal(true);
         });
     });
 

@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import { IERC721A, ERC721A } from 'erc721a/contracts/ERC721A.sol';
 import { ERC721AQueryable } from 'erc721a/contracts/extensions/ERC721AQueryable.sol';
-import { MerkleProof } from '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
-import { IERC2981, ERC2981 } from '@openzeppelin/contracts/token/common/ERC2981.sol';
-import { OperatorFilterer } from 'closedsea/src/OperatorFilterer.sol';
+import { ERC2981 } from 'solady/src/tokens/ERC2981.sol';
 import { Ownable } from 'solady/src/auth/Ownable.sol';
+import { MerkleProofLib } from 'solady/src/utils/MerkleProofLib.sol';
+import { OperatorFilterer } from 'closedsea/src/OperatorFilterer.sol';
 
 contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -79,7 +79,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     function mintAllowlist(uint256 nMints, bytes32[] calldata _proof) external payable validTxn(nMints) {
         bytes32 node = keccak256(abi.encodePacked(msg.sender));
         if (!isAllowlistMintOpen) revert MintNotOpen();
-        if (!MerkleProof.verify(_proof, merkleRoot, node)) revert NotOnAllowlist();
+        if (!MerkleProofLib.verifyCalldata(_proof, merkleRoot, node)) revert NotOnAllowlist();
         if (msg.value != allowlistMintPrice * nMints) revert IncorrectPayment();
         if (_numberMinted(msg.sender) + nMints > maxAllowlistMintsPerTxn) revert ExceedsTxnLimit();
 
