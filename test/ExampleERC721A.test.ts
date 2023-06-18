@@ -228,7 +228,10 @@ describe('ExampleERC721A tests', function () {
             );
         });
         it('should revert when not called by owner', async function () {
-            await expect(contract.connect(addr1).mintReserve(1)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(contract.connect(addr1).mintReserve(1)).to.be.revertedWithCustomError(
+                contract,
+                'Unauthorized'
+            );
         });
     });
     context('Setter functions', function () {
@@ -239,8 +242,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.maxSupply()).to.equal(100);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).setMaxSupply(100)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setMaxSupply(100)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -251,8 +255,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.maxPublicMintsPerTxn()).to.equal(10);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).setMaxPublicMints(10)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setMaxPublicMints(10)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -263,8 +268,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.maxAllowlistMintsPerTxn()).to.equal(10);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).setMaxAllowlistMints(10)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setMaxAllowlistMints(10)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -277,7 +283,7 @@ describe('ExampleERC721A tests', function () {
             it('should revert when not called by owner', async function () {
                 await expect(
                     contract.connect(addr1).setPublicMintPrice(ethers.utils.parseEther('2'))
-                ).to.be.revertedWith('Ownable: caller is not the owner');
+                ).to.be.revertedWithCustomError(contract, 'Unauthorized');
             });
         });
         describe('setAllowlistMintPrice', function () {
@@ -289,7 +295,7 @@ describe('ExampleERC721A tests', function () {
             it('should revert when not called by owner', async function () {
                 await expect(
                     contract.connect(addr1).setAllowlistMintPrice(ethers.utils.parseEther('2'))
-                ).to.be.revertedWith('Ownable: caller is not the owner');
+                ).to.be.revertedWithCustomError(contract, 'Unauthorized');
             });
         });
         describe('setMerkleRoot', function () {
@@ -302,8 +308,9 @@ describe('ExampleERC721A tests', function () {
             it('should revert when not called by owner', async function () {
                 const newMerkleRoot = formatBytes32String('newMerkleRoot');
 
-                await expect(contract.connect(addr1).setMerkleRoot(newMerkleRoot)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setMerkleRoot(newMerkleRoot)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -322,8 +329,9 @@ describe('ExampleERC721A tests', function () {
             it('should revert when not called by owner', async function () {
                 const newBaseURI = 'https://example.com/';
 
-                await expect(contract.connect(addr1).setBaseURI(newBaseURI)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setBaseURI(newBaseURI)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -355,9 +363,9 @@ describe('ExampleERC721A tests', function () {
                 expect(royaltyReceiver).to.equal(newRoyaltyReceiver);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).setDefaultRoyalty(addr1.address, 1000)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
-                );
+                await expect(
+                    contract.connect(addr1).setDefaultRoyalty(addr1.address, 1000)
+                ).to.be.revertedWithCustomError(contract, 'Unauthorized');
             });
         });
         describe('setOperatorFilteringEnabled', function () {
@@ -367,8 +375,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.operatorFilteringEnabled()).to.equal(false);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).setOperatorFilteringEnabled(false)).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).setOperatorFilteringEnabled(false)).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -379,8 +388,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.isPublicMintOpen()).to.equal(true);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).toggleIsPublicMintOpen()).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).toggleIsPublicMintOpen()).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -391,8 +401,9 @@ describe('ExampleERC721A tests', function () {
                 expect(await contract.isAllowlistMintOpen()).to.equal(true);
             });
             it('should revert when not called by owner', async function () {
-                await expect(contract.connect(addr1).toggleIsAllowlistMintOpen()).to.be.revertedWith(
-                    'Ownable: caller is not the owner'
+                await expect(contract.connect(addr1).toggleIsAllowlistMintOpen()).to.be.revertedWithCustomError(
+                    contract,
+                    'Unauthorized'
                 );
             });
         });
@@ -416,7 +427,7 @@ describe('ExampleERC721A tests', function () {
             );
         });
         it('should revert when not called by owner', async function () {
-            await expect(contract.connect(addr1).withdrawAll()).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(contract.connect(addr1).withdrawAll()).to.be.revertedWithCustomError(contract, 'Unauthorized');
         });
     });
     describe('supportsInterface', function () {

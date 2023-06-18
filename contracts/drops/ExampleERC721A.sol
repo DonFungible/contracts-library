@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import { IERC721A, ERC721A } from 'erc721a/contracts/ERC721A.sol';
 import { ERC721AQueryable } from 'erc721a/contracts/extensions/ERC721AQueryable.sol';
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
 import { MerkleProof } from '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
 import { IERC2981, ERC2981 } from '@openzeppelin/contracts/token/common/ERC2981.sol';
 import { OperatorFilterer } from 'closedsea/src/OperatorFilterer.sol';
+import { Ownable } from 'solady/src/auth/Ownable.sol';
 
 contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -25,6 +25,7 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           STORAGE                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     address public immutable TREASURY;
     uint256 public maxSupply = 10000;
     uint256 public maxPublicMintsPerTxn = 5;
@@ -54,8 +55,9 @@ contract ExampleERC721A is ERC721AQueryable, Ownable, OperatorFilterer, ERC2981 
 
     constructor(address _treasury) ERC721A('ExampleERC721A', 'Example') {
         TREASURY = _treasury;
-        _registerForOperatorFiltering();
         operatorFilteringEnabled = true;
+        _registerForOperatorFiltering();
+        _initializeOwner(msg.sender);
         _setDefaultRoyalty(msg.sender, 500);
     }
 
