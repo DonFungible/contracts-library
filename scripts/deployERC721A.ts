@@ -10,11 +10,15 @@ async function main() {
     await contract.connect(owner).toggleIsPublicMintOpen();
 
     console.log(`✅ Contract deployed to address: ${contract.address}`);
+    console.log(`👑 Owner address: ${owner.address}`);
+
+    await contract.connect(owner).mintReserve(1);
+    await contract.connect(owner).setBaseURI('https://erc6551-token-overlay.vercel.app/');
 }
 
 main()
     .then(() => process.exit(0))
-    .catch((error) => {
+    .catch(error => {
         console.error(error);
         process.exit(1);
     });
